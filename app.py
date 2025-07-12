@@ -1,4 +1,5 @@
-from dash import Dash, Input, Output, html
+from dash import Dash, Input, Output, html, dcc
+import dash_bootstrap_components as dbc
 
 from components.header import create_header
 from components.temperature.layout import create_temperature_layout
@@ -6,44 +7,41 @@ from components.sea_levels.layout import create_sea_levels_layout
 from components.correlation.layout import create_correlation_layout
 from components.deforestation.layout import create_deforestation_layout
 from components.greenhouse_gas import get_layout as create_ghg_layout
+from components.air_quality import get_layout as create_air_quality_layout
 
 from components.temperature.callbacks import register_temperature_callbacks
-# greenhouse gas callbacks are registered on import
 
-external_stylesheets = [
-    'https://codepen.io/chriddyp/pen/bWLwgP.css',
-    {
-        'href': 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css',
-        'rel': 'stylesheet',
-        'integrity': 'sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO',
-        'crossorigin': 'anonymous'
-    }
-]
-
-app = Dash(__name__, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True)
+app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 server = app.server
 
-app.layout = create_header()
+app.layout = html.Div([
+    dcc.Location(id='url', refresh=False),
+    html.Div(id='page-content')
+])
+
+homepage_layout = create_header()
 
 @app.callback(
-    Output('dd-output-container', 'children'),
-    Input('demo-dropdown', 'value')
+    Output('page-content', 'children'),
+    Input('url', 'pathname')
 )
-def update_output(value):
-    if value == 'temperature':
+def display_page(pathname):
+    if pathname == '/temperature':
         return create_temperature_layout()
-    elif value == 'ghg':
+    elif pathname == '/ghg':
         return create_ghg_layout()
-    elif value == 'sea':
+    elif pathname == '/sea':
         return create_sea_levels_layout()
-    elif value == 'correlation':
+    elif pathname == '/correlation':
         return create_correlation_layout()
-    elif value == 'deforestation':
+    elif pathname == '/deforestation':
         return create_deforestation_layout()
-    return html.Div()  # Return empty div if no value matches
+    elif pathname == '/air-quality':
+        return create_air_quality_layout()
+    else:
+        return homepage_layout
 
 register_temperature_callbacks(app)
-# greenhouse gas callbacks auto-registered
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -66,4 +66,22 @@ def top_emitters(gas: str, year: int, n: int = 10):
         .sort_values('Value', ascending=False)
         .head(n)
     )
-    return subset[['Country', 'Value']] 
+    return subset[['Country', 'Value']]
+
+
+def get_top_bottom_countries(gas: str, n: int = 5):
+    """Return top and bottom N emitting countries for a given gas across all years."""
+    df = load_clean_data()
+    gas_df = df[df['Gas'] == gas]
+    if gas_df.empty:
+        return pd.Index([]), pd.Index([])
+    total_emissions = gas_df.groupby('Country')['Value'].sum()
+    top_countries = total_emissions.nlargest(n).index
+    bottom_countries = total_emissions.nsmallest(n).index
+    return top_countries, bottom_countries
+
+
+def get_all_countries():
+    """Return sorted list of all distinct country names."""
+    df = load_clean_data()
+    return sorted(df['Country'].unique()) 
