@@ -1,4 +1,4 @@
-from dash import callback, Input, Output, dcc
+from dash import callback, Input, Output
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
@@ -17,71 +17,40 @@ def set_cities_options(selected_country):
     value = cities[0] if cities else None
     return options, value
 
-def create_calendar_heatmap(df, metric):
-    df['date'] = pd.to_datetime(df['date'])
-    df['month'] = df['date'].dt.month
-    df['day'] = df['date'].dt.day
-    df['year'] = df['date'].dt.year
-    df['day_of_week'] = df['date'].dt.day_name()
-    
-    # Pivot data for heatmap
-    pivot_table = df.pivot_table(values=metric, index='day_of_week', columns='day', aggfunc='mean')
-    
-    # Order days of the week correctly
-    ordered_days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-    pivot_table = pivot_table.reindex(ordered_days)
-
-    fig = px.imshow(pivot_table,
-                    labels=dict(x="Day of Month", y="Day of Week", color=metric.replace('_', ' ').title()),
-                    x=pivot_table.columns,
-                    y=pivot_table.index,
-                    title=f'Calendar Heatmap for {metric.replace("_", " ").title()}')
-    fig.update_xaxes(side="top")
-    return fig
-
 @callback(
     Output('aq-timeseries-plot', 'figure'),
     Output('aq-boxplot', 'figure'),
-    Output('aq-scatterplot', 'figure'),
-    Output('aq-calendar-heatmap', 'figure'),
-    Output('aq-bar-chart', 'figure'),
     Input('aq-city-dropdown', 'value'),
-    Input('aq-metric-dropdown', 'value'),
-    Input('aq-country-dropdown', 'value')
+    Input('aq-metric-dropdown', 'value')
 )
-def update_air_quality_graphs(city, metric, country):
+def update_air_quality_graphs(city, metric):
     if not city or not metric:
-        empty_fig = go.Figure().update_layout(
-            paper_bgcolor="#1E3A5F", plot_bgcolor="#1E3A5F", 
-            font_color="white", title_text="Please select a city and metric"
-        )
-        return empty_fig, empty_fig, empty_fig, empty_fig, empty_fig
+        empty_fig = go.Figure(layout={'paper_bgcolor': '#4482C1', 'plot_bgcolor': '#4482C1'})
+        return empty_fig, empty_fig
 
     df = load_air_quality_data()
     city_df = df[df['city'] == city].sort_values(by='date')
-    metric_label = metric.replace('_', ' ').title()
+    metric_label = f"{metric.replace('_', ' ').title()} (µg/m³)" if 'pm' in metric or 'co' in metric else metric.replace('_', ' ').title()
 
-    # Time Series
-    ts_fig = px.line(city_df, x='date', y=metric, title=f'{metric_label} Over Time in {city}')
+    # Enhanced Time Series
+    city_df['smoothed'] = city_df[metric].rolling(window=30, center=True, min_periods=1).mean()
+    city_df['std'] = city_df[metric].rolling(window=30, center=True, min_periods=1).std()
     
-    # Box Plot
-    box_fig = px.box(city_df, y=metric, title=f'Distribution of {metric_label} in {city}')
-
-    # Scatter Plot (example: metric vs. wind speed)
-    scatter_fig = px.scatter(city_df, x='wind_speed', y=metric, 
-                             title=f'{metric_label} vs. Wind Speed in {city}',
-                             labels={'wind_speed': 'Wind Speed (m/s)'})
-
-    # Calendar Heatmap
-    calendar_fig = create_calendar_heatmap(city_df, metric)
+    ts_fig = go.Figure()
+    ts_fig.add_trace(go.Scatter(x=city_df['date'], y=city_df['smoothed'] + city_df['std'], mode='lines', line=dict(width=0), showlegend=False))
+    ts_fig.add_trace(go.Scatter(x=city_df['date'], y=city_df['smoothed'] - city_df['std'], mode='lines', line=dict(width=0), fill='tonexty', fillcolor='rgba(0,114,178,0.2)', name='±1 Std Dev'))
+    ts_fig.add_trace(go.Scatter(x=city_df['date'], y=city_df['smoothed'], mode='lines', line=dict(color='#0072B2', width=3), name='30-Day Rolling Mean'))
     
-    # Bar chart (comparing with other cities in the same country)
-    country_df = df[df['country'] == country]
-    bar_data = country_df.groupby('city')[metric].mean().reset_index()
-    bar_fig = px.bar(bar_data, x='city', y=metric, title=f'Average {metric_label} Comparison in {country}')
+    min_point = city_df.loc[city_df[metric].idxmin()]
+    max_point = city_df.loc[city_df[metric].idxmax()]
+    ts_fig.add_trace(go.Scatter(x=[min_point['date'], max_point['date']], y=[min_point[metric], max_point[metric]], mode='markers+text', marker=dict(size=8, color='red'), text=['Min', 'Max'], textposition='top center', showlegend=False))
     
-    # Update layout for all figures to match the app's theme
-    for fig in [ts_fig, box_fig, scatter_fig, calendar_fig, bar_fig]:
-        fig.update_layout(paper_bgcolor="white", plot_bgcolor="white", font_color="black")
+    ts_fig.update_layout(title=f'{metric_label} Over Time in {city}', yaxis_title=metric_label)
 
-    return ts_fig, box_fig, scatter_fig, calendar_fig, bar_fig 
+    # Violin Plot for Distribution
+    violin_fig = px.violin(city_df, y=metric, box=True, points="all", title=f'Distribution of {metric_label} in {city}')
+    
+    for fig in [ts_fig, violin_fig]:
+        fig.update_layout(paper_bgcolor="white", plot_bgcolor="#f8f9fa", font_color="black")
+
+    return ts_fig, violin_fig 

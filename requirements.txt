@@ -6,3 +6,4 @@ dash-bootstrap-components
 bokeh
 matplotlib 
 seaborn
+pycountry-convert

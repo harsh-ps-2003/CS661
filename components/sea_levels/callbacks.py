@@ -4,6 +4,8 @@ import plotly.graph_objects as go
 import plotly.express as px
 import logging
 from .data import load_sea_level_data, load_sea_ice_data, calculate_seasonal_cycle, calculate_monthly_trends
+import pandas as pd
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -27,213 +29,159 @@ def create_empty_figure(title="No data available"):
 
 @callback(
     [
-        Output('sea-level-bar', 'figure'),
         Output('sea-level-scatter', 'figure'),
         Output('sea-level-area', 'figure'),
         Output('sea-ice-seasonal', 'figure'),
         Output('sea-ice-trends', 'figure'),
         Output('sea-ice-extent', 'figure')
     ],
-    [Input('sea-levels-container', 'children')]
+    [Input('Sea-Levels', 'children')]
 )
 def update_sea_level_figures(_):
     """Update all sea level and sea ice figures."""
     try:
         logger.info("Starting to update sea level figures")
         
-        # Load sea level data
-        sea_level_data = load_sea_level_data()
-        if sea_level_data.empty:
-            logger.warning("No sea level data available")
-            return tuple(create_empty_figure() for _ in range(6))
-        
-        # Create sea level bar chart
-        fig_bar = go.Figure(
-            data=[go.Bar(x=sea_level_data['Year'], y=sea_level_data['Sea Level'])],
-            layout=go.Layout(
-                title=go.layout.Title(text="Sea Level Change Over Time", font=dict(size=24)),
-                xaxis=go.layout.XAxis(title=go.layout.xaxis.Title(text="Year")),
-                yaxis=go.layout.YAxis(title=go.layout.yaxis.Title(text="Sea Level (mm)")),
-                width=1000,
-                height=500,
-                margin=dict(l=20, r=20, t=40, b=20),
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgb(245, 245, 245)',
-                showlegend=False
-            )
-        )
-
-        # Scatter plot
-        fig_scatter = px.scatter(
-            sea_level_data,
-            x='Year',
-            y='Sea Level',
-            title='Sea Level Scatter Plot',
-            labels={'Sea Level': 'Sea Level (mm)'},
-            color_discrete_sequence=['#1f77b4']
-        )
-        fig_scatter.update_layout(
-            width=1000,
-            height=500,
-            margin=dict(l=20, r=20, t=40, b=20),
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgb(245, 245, 245)',
-            title_x=0.5,
-            title_y=0.95,
-            title_font_size=20,
-            xaxis=dict(showgrid=True, gridwidth=1, gridcolor='rgb(228, 228, 228)'),
-            yaxis=dict(showgrid=True, gridwidth=1, gridcolor='rgb(228, 228, 228)')
-        )
-
-        # Area chart
-        fig_area = px.area(
-            sea_level_data,
-            x='Year',
-            y='Sea Level',
-            title='Sea Level Area Chart',
-            labels={'Sea Level': 'Sea Level (mm)'},
-            color_discrete_sequence=['#3D9970']
-        )
-        fig_area.update_traces(
-            line_color='darkblue',
-            line_width=1,
-            opacity=0.5
-        )
-        fig_area.update_layout(
-            width=1000,
-            height=500,
-            margin=dict(l=20, r=20, t=40, b=20),
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgb(245, 245, 245)',
-            title_x=0.5,
-            title_y=0.95,
-            title_font_size=20,
-            xaxis=dict(showgrid=True, gridwidth=1, gridcolor='rgb(228, 228, 228)'),
-            yaxis=dict(showgrid=True, gridwidth=1, gridcolor='rgb(228, 228, 228)')
-        )
-        
-        # Load and process sea ice data
-        ice_data = load_sea_ice_data()
-        if ice_data.empty:
-            logger.warning("No sea ice data available")
-            return (
-                fig_bar,
-                fig_scatter,
-                fig_area,
-                create_empty_figure("No sea ice data available"),
-                create_empty_figure("No sea ice data available"),
-                create_empty_figure("No sea ice data available")
-            )
-        
-        seasonal_stats = calculate_seasonal_cycle(ice_data)
-        monthly_avg, trends = calculate_monthly_trends(ice_data)
-
-        # Create seasonal cycle plot
-        fig_seasonal = go.Figure()
-        
-        fig_seasonal.add_trace(go.Scatter(
-            x=seasonal_stats['DayOfYear'],
-            y=seasonal_stats['Mean_Extent'],
-            name='Mean Extent',
-            line=dict(color='blue', width=2)
-        ))
-        
-        fig_seasonal.add_trace(go.Scatter(
-            x=seasonal_stats['DayOfYear'],
-            y=seasonal_stats['Mean_Extent'] + seasonal_stats['Std_Extent'],
-            fill=None,
-            mode='lines',
-            line_color='rgba(0,100,255,0)',
-            showlegend=False
-        ))
-        
-        fig_seasonal.add_trace(go.Scatter(
-            x=seasonal_stats['DayOfYear'],
-            y=seasonal_stats['Mean_Extent'] - seasonal_stats['Std_Extent'],
-            fill='tonexty',
-            mode='lines',
-            line_color='rgba(0,100,255,0)',
-            name='±1 Std Dev'
-        ))
-        
-        fig_seasonal.update_layout(
-            title='Sea Ice Extent Seasonal Cycle',
-            xaxis_title='Day of Year',
-            yaxis_title='Sea Ice Extent (million sq km)',
-            hovermode='x unified',
-            width=1000,
-            height=500,
-            margin=dict(l=20, r=20, t=40, b=20),
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgb(245, 245, 245)',
-            title_x=0.5,
-            title_y=0.95,
-            title_font_size=20,
-            xaxis=dict(showgrid=True, gridwidth=1, gridcolor='rgb(228, 228, 228)'),
-            yaxis=dict(showgrid=True, gridwidth=1, gridcolor='rgb(228, 228, 228)')
-        )
-
-        # Create monthly trends plot
-        month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-        if not trends.empty:
-            trends['Month_Name'] = trends['Month'].map(lambda x: month_names[x-1])
-            
-            fig_trends = px.bar(
-                trends,
-                x='Month_Name',
-                y='Trend',
-                title='Monthly Sea Ice Extent Trends',
-                labels={'Trend': 'Change Rate (million sq km/year)', 'Month_Name': 'Month'},
-                color='Trend',
-                color_continuous_scale='RdBu'
-            )
-        else:
-            fig_trends = create_empty_figure("No trend data available")
-        
-        fig_trends.update_layout(
-            width=1000,
-            height=500,
-            margin=dict(l=20, r=20, t=40, b=20),
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgb(245, 245, 245)',
-            title_x=0.5,
-            title_y=0.95,
-            title_font_size=20,
-            xaxis=dict(showgrid=True, gridwidth=1, gridcolor='rgb(228, 228, 228)'),
-            yaxis=dict(showgrid=True, gridwidth=1, gridcolor='rgb(228, 228, 228)')
-        )
-
-        # Create area plot for sea ice extent over time
-        fig_extent = px.area(
-            ice_data,
-            x='Date',
-            y='Extent',
-            title='Sea Ice Extent Over Time',
-            labels={'Extent': 'Sea Ice Extent (million sq km)', 'Date': 'Year'},
-            color_discrete_sequence=['#3D9970']
-        )
-        
-        fig_extent.update_traces(
-            line_color='darkblue',
-            line_width=1,
-            opacity=0.5
-        )
-        
-        fig_extent.update_layout(
-            width=1000,
-            height=500,
-            margin=dict(l=20, r=20, t=40, b=20),
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgb(245, 245, 245)',
-            title_x=0.5,
-            title_y=0.95,
-            title_font_size=20,
-            xaxis=dict(showgrid=True, gridwidth=1, gridcolor='rgb(228, 228, 228)'),
-            yaxis=dict(showgrid=True, gridwidth=1, gridcolor='rgb(228, 228, 228)')
-        )
-
-        logger.info("Successfully updated all figures")
-        return fig_bar, fig_scatter, fig_area, fig_seasonal, fig_trends, fig_extent
+        # Load data
+        df_sea_level = load_sea_level_data()
+        df_sea_ice = load_sea_ice_data()
     except Exception as e:
-        logger.error(f"Error updating figures: {e}")
-        return tuple(create_empty_figure("Error loading data") for _ in range(6))
+        print(f"Error loading sea level data: {e}")
+        return [create_empty_figure(title="Error loading data") for _ in range(5)]
+
+    if df_sea_level.empty or df_sea_ice.empty:
+        return [create_empty_figure() for _ in range(5)]
+        
+    # Create figures
+    fig_scatter = px.scatter(df_sea_level, x='Year', y='Sea Level', title='Sea Level Change Over Time')
+    fig_area = px.area(df_sea_level, x='Year', y='Sea Level', title='Cumulative Sea Level Change')
+    
+    seasonal_data = calculate_seasonal_cycle(df_sea_ice)
+    
+    fig_seasonal = go.Figure()
+
+    # Add standard deviation bands
+    fig_seasonal.add_trace(go.Scatter(
+        x=seasonal_data['DayOfYear'],
+        y=seasonal_data['Mean_Extent'] + seasonal_data['Std_Extent'],
+        mode='lines',
+        line=dict(width=0),
+        showlegend=False,
+        name='Upper Bound'
+    ))
+    fig_seasonal.add_trace(go.Scatter(
+        x=seasonal_data['DayOfYear'],
+        y=seasonal_data['Mean_Extent'] - seasonal_data['Std_Extent'],
+        mode='lines',
+        line=dict(width=0),
+        fillcolor='rgba(0, 114, 178, 0.2)',
+        fill='tonexty',
+        showlegend=False,
+        name='Lower Bound'
+    ))
+
+    # Add smoothed mean line
+    fig_seasonal.add_trace(go.Scatter(
+        x=seasonal_data['DayOfYear'],
+        y=seasonal_data['Smoothed_Mean_Extent'],
+        mode='lines',
+        line=dict(color='#0072B2', width=3),
+        name='7-Day Rolling Mean'
+    ))
+    
+    # Find and label min/max points
+    min_day = seasonal_data.loc[seasonal_data['Mean_Extent'].idxmin()]
+    max_day = seasonal_data.loc[seasonal_data['Mean_Extent'].idxmax()]
+    
+    fig_seasonal.add_trace(go.Scatter(
+        x=[min_day['DayOfYear'], max_day['DayOfYear']],
+        y=[min_day['Mean_Extent'], max_day['Mean_Extent']],
+        mode='markers+text',
+        marker=dict(color='red', size=8),
+        text=[f"Min: Day {int(min_day['DayOfYear'])}", f"Max: Day {int(max_day['DayOfYear'])}"],
+        textposition="top center",
+        showlegend=False
+    ))
+
+    # Update layout
+    fig_seasonal.update_layout(
+        title='Average Sea Ice Extent by Day of Year',
+        yaxis_title='Sea-ice extent (million km²)',
+        xaxis_title='Day of Year',
+        hovermode='x unified'
+    )
+    
+    monthly_avg_data, trends_df = calculate_monthly_trends(df_sea_ice)
+    
+    # Create heatmap for monthly sea ice extent
+    pivot_data = monthly_avg_data.pivot(index='Month', columns='Year', values='Extent')
+    fig_trends = px.imshow(
+        pivot_data,
+        labels=dict(x="Year", y="Month", color="Sea Ice Extent (million km²)"),
+        title='Monthly Sea Ice Extent Heatmap',
+        color_continuous_scale=px.colors.sequential.Plasma
+    )
+    
+    # Enhanced Daily Sea Ice Extent Plot
+    # 1. Smoothing and variability
+    df_sea_ice['Extent_smoothed'] = df_sea_ice['Extent'].rolling(window=30, center=True, min_periods=1).mean()
+    df_sea_ice['Extent_std'] = df_sea_ice['Extent'].rolling(window=30, center=True, min_periods=1).std()
+
+    # 2. Trend Line Calculation
+    trend_data = df_sea_ice.dropna(subset=['Extent'])
+    x_numeric = pd.to_numeric(trend_data['Date'])
+    z = np.polyfit(x_numeric, trend_data['Extent'], 1)
+    p = np.poly1d(z)
+    df_sea_ice['trend'] = p(pd.to_numeric(df_sea_ice['Date']))
+    slope_per_decade = z[0] * 365.25 * 10
+
+    # 3. Annual Min/Max
+    annual_mins = df_sea_ice.loc[df_sea_ice.groupby(df_sea_ice['Date'].dt.year)['Extent'].idxmin()]
+    annual_maxs = df_sea_ice.loc[df_sea_ice.groupby(df_sea_ice['Date'].dt.year)['Extent'].idxmax()]
+
+    # 4. Create the plot with graph_objects
+    fig_extent = go.Figure()
+
+    # Add shaded variability band
+    fig_extent.add_trace(go.Scatter(
+        x=df_sea_ice['Date'], y=df_sea_ice['Extent_smoothed'] + df_sea_ice['Extent_std'],
+        mode='lines', line=dict(width=0), showlegend=False, name='Upper Bound'
+    ))
+    fig_extent.add_trace(go.Scatter(
+        x=df_sea_ice['Date'], y=df_sea_ice['Extent_smoothed'] - df_sea_ice['Extent_std'],
+        mode='lines', line=dict(width=0), fillcolor='rgba(0, 114, 178, 0.2)', fill='tonexty',
+        showlegend=True, name='±1 Std. Dev.'
+    ))
+    # Add smoothed line
+    fig_extent.add_trace(go.Scatter(
+        x=df_sea_ice['Date'], y=df_sea_ice['Extent_smoothed'],
+        mode='lines', line=dict(color='#0072B2', width=2), name='30-Day Rolling Mean'
+    ))
+    # Add trend line
+    fig_extent.add_trace(go.Scatter(
+        x=df_sea_ice['Date'], y=df_sea_ice['trend'],
+        mode='lines', line=dict(color='red', dash='dash', width=2), name='Long-term Trend'
+    ))
+    # Add annual min/max markers
+    fig_extent.add_trace(go.Scatter(
+        x=annual_mins['Date'], y=annual_mins['Extent'], mode='markers',
+        marker=dict(color='blue', size=5, symbol='diamond'), name='Annual Minimum'
+    ))
+    fig_extent.add_trace(go.Scatter(
+        x=annual_maxs['Date'], y=annual_maxs['Extent'], mode='markers',
+        marker=dict(color='red', size=5, symbol='circle'), name='Annual Maximum'
+    ))
+
+    # 5. Update layout and add annotation
+    fig_extent.update_layout(
+        title='Daily Sea Ice Extent with Trend and Variability',
+        yaxis_title='Sea Ice Extent (million km²)',
+        xaxis_title='Year', hovermode='x unified', legend=dict(x=0.01, y=0.99)
+    )
+    fig_extent.add_annotation(
+        x=0.99, y=0.99, xref='paper', yref='paper',
+        text=f'Trend: {slope_per_decade:.2f} million km²/decade',
+        showarrow=False, font=dict(size=12, color="red"), align="right"
+    )
+
+    return fig_scatter, fig_area, fig_seasonal, fig_trends, fig_extent

@@ -95,5 +95,5 @@ def create_correlation_layout():
                 style={'margin': '10px', 'display': 'block', 'flex-wrap': 'wrap'}
             )
         ],
-        style={'background-color': '#4482C1'}
+        style={'background-color': '#006666'}
     )

@@ -1,49 +1,102 @@
 import pandas as pd
-import numpy as np
+
+# ---------------------------------------------------------------------------
+# Helper utilities
+# ---------------------------------------------------------------------------
+
+def _clean_numeric(series):
+    """Convert a pandas Series of strings to numeric, coercing non-numeric to NaN."""
+    return pd.to_numeric(series.astype(str)
+                             .str.replace(',', '', regex=False)
+                             .str.replace('…', '', regex=False)
+                             .str.replace('', '', regex=False)
+                             .str.strip(),
+                             errors='coerce')
+
+
+# A *very* small manual region map (keep only what we show in the dashboard).
+# Feel free to extend if you want more countries displayed.
+REGION_MAP = {
+    # South America
+    'Brazil': 'South America', 'Colombia': 'South America', 'Peru': 'South America',
+    'Venezuela (Bolivarian Republic of)': 'South America',
+    # North America
+    'United States of America': 'North America', 'Canada': 'North America', 'Mexico': 'North America',
+    # Asia
+    'China': 'Asia', 'India': 'Asia', 'Indonesia': 'Asia', 'Malaysia': 'Asia', 'Japan': 'Asia',
+    # Europe
+    'Russian Federation': 'Europe', 'Germany': 'Europe', 'France': 'Europe',
+    'United Kingdom of Great Britain and Northern Ireland': 'Europe',
+    # Oceania
+    'Australia': 'Oceania', 'New Zealand': 'Oceania',
+    # Africa
+    'Nigeria': 'Africa', 'Democratic Republic of the Congo': 'Africa',
+    'South Africa': 'Africa', 'Kenya': 'Africa'
+}
+
+
+# ---------------------------------------------------------------------------
+# Public API expected by the layout – DO NOT change function names/signatures
+# ---------------------------------------------------------------------------
+
 
 def load_deforestation_data():
-    """Load and preprocess deforestation data."""
-    df = pd.read_csv('dataset/deforestation.csv')
-    
-    # Calculate absolute forest loss (negative values mean deforestation)
+    """Load and preprocess forest-area data for deforestation analysis.
+
+    The new dataset `Forest_Area.csv` contains forest-area snapshots for
+    1990-2020.  We only use the 2000 and 2020 columns to keep the
+    existing figures untouched while providing more reliable numbers.
+    """
+
+    raw = pd.read_csv('dataset/Forest_Area.csv')
+
+    # Drop the aggregated WORLD row and any empty country rows
+    raw = raw[raw['Country and Area'].notna() & (raw['Country and Area'] != 'WORLD')]
+
+    # Keep only the columns we need
+    cols_of_interest = [
+        'Country and Area',
+        'Forest Area, 2000',
+        'Forest Area, 2020'
+    ]
+    df = raw[cols_of_interest].copy()
+
+    # Clean numeric columns (some cells contain unicode ellipsis)
+    df['forests_2000'] = _clean_numeric(df['Forest Area, 2000'])
+    df['forests_2020'] = _clean_numeric(df['Forest Area, 2020'])
+
+    # Drop rows with missing numbers
+    df = df.dropna(subset=['forests_2000', 'forests_2020'])
+
+    # Calculate absolute forest-area change (negative = loss)
     df['Forest_Loss'] = df['forests_2020'] - df['forests_2000']
-    
-    # Create a clean dataset for time series (2000 and 2020 points)
-    time_series_data = []
-    for _, row in df.iterrows():
-        # 2000 data point
-        time_series_data.append({
-            'Year': 2000,
-            'Forest_Cover': row['forests_2000'],
-            'Country': row['iso3c']
-        })
-        # 2020 data point
-        time_series_data.append({
-            'Year': 2020,
-            'Forest_Cover': row['forests_2020'],
-            'Country': row['iso3c']
-        })
-    
-    time_series_df = pd.DataFrame(time_series_data)
-    
-    # Group countries into regions (simplified for visualization)
-    region_mapping = {
-        'BRA': 'South America', 'COL': 'South America', 'PER': 'South America', 'VEN': 'South America',
-        'USA': 'North America', 'CAN': 'North America', 'MEX': 'North America',
-        'CHN': 'Asia', 'IND': 'Asia', 'IDN': 'Asia', 'MYS': 'Asia', 'JPN': 'Asia',
-        'RUS': 'Europe', 'DEU': 'Europe', 'FRA': 'Europe', 'GBR': 'Europe',
-        'AUS': 'Oceania', 'NZL': 'Oceania',
-        'NGA': 'Africa', 'COD': 'Africa', 'ZAF': 'Africa', 'KEN': 'Africa'
-    }
-    
-    # Add region to both dataframes
-    df['Region'] = df['iso3c'].map(region_mapping)
-    time_series_df['Region'] = time_series_df['Country'].map(region_mapping)
-    
-    # Filter out rows where Region is None (was previously 'Other')
+
+    # Minimal region mapping – rows w/o a region are discarded (keeps visuals tidy)
+    df['Region'] = df['Country and Area'].map(REGION_MAP)
     df = df[df['Region'].notna()]
-    time_series_df = time_series_df[time_series_df['Region'].notna()]
-    
+
+    # ------------------------------------------------------------------
+    # Build a time-series dataframe for the line plot
+    # We include 2000 and 2020 only to preserve the visual structure; if
+    # you want richer detail, extend `years`.
+    # ------------------------------------------------------------------
+
+    time_series_rows = []
+    years = [2000, 2020]
+    for _, row in df.iterrows():
+        for yr in years:
+            col = f'forests_{yr}' if yr != 2000 else 'forests_2000'
+            # 2000 already loaded; for 2020 we have forests_2020
+            val = row['forests_2020'] if yr == 2020 else row['forests_2000']
+            time_series_rows.append({
+                'Year': yr,
+                'Forest_Cover': val,
+                'Country': row['Country and Area'],
+                'Region': row['Region']
+            })
+
+    time_series_df = pd.DataFrame(time_series_rows)
+
     return df, time_series_df
 
 def calculate_regional_stats(df):

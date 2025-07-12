@@ -1,10 +1,13 @@
 from dash import html, dcc
-from .data import available_gases, get_all_countries
+from .data import available_gases, get_all_countries, latest_year, load_clean_data
 
 
 def create_layout():
     gases = available_gases()
     countries = get_all_countries()
+    df = load_clean_data()
+    min_year, max_year = int(df['year'].min()), int(df['year'].max())
+
     return html.Div([
         html.H1('Global Greenhouse Gas Emissions', style={'textAlign': 'center', 'color': 'white'}),
         html.Div([
@@ -33,6 +36,16 @@ def create_layout():
         # Graphs
         html.Div([
             dcc.Graph(id="ghg-scatterplot", style={"margin-bottom": "10px", 'border': '3px solid #2A547E'}),
+            html.H3("Continent Emissions", style={'textAlign': 'center', 'color': 'white'}),
+            dcc.Graph(id='ghg-continent-pie-chart', style={"margin-bottom": "10px", 'border': '3px solid #2A547E'}),
+            dcc.Slider(
+                id='ghg-year-slider-pie',
+                min=min_year,
+                max=max_year,
+                value=max_year,
+                marks={str(year): str(year) for year in range(min_year, max_year + 1, 5)},
+                step=1,
+            ),
             html.H1(id='racing-bar-title', children='Top 10 Emitting Countries - Growth', style={'font-size': '20px', 'color': 'white', 'padding-left': '10px'}),
             dcc.Graph(id='ghg-racing-bar', style={"margin-bottom": "10px", 'border': '3px solid #2A547E'}),
             dcc.Interval(id='ghg-interval-component', interval=600, n_intervals=0),
@@ -43,9 +56,7 @@ def create_layout():
                 ],
                 style={"display": "flex", "flex-direction": "row", "justify-content": "space-between", "width": "100%"}
             ),
-            dcc.Graph(id="ghg-bubble-map", style={"margin-bottom": "10px", 'border': '3px solid #2A547E'}),
             dcc.Graph(id='ghg-top-5-line', style={"margin-bottom": "10px", 'border': '3px solid #2A547E'}),
             dcc.Graph(id='ghg-bottom-5-line', style={"margin-bottom": "10px", 'border': '3px solid #2A547E'}),
-            dcc.Graph(id='ghg-choropleth-map', style={"margin-bottom": "10px", 'border': '3px solid #2A547E', 'width': '100%', 'height': '850px'}),
         ], style={'margin': 'auto', 'width': '95%'}),
-    ], style={'backgroundColor': '#4482C1', 'padding': '30px', 'minHeight': '100vh'}) 
+    ], style={'backgroundColor': '#3B2F70', 'padding': '30px', 'minHeight': '100vh'}) 

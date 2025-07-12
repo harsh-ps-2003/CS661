@@ -35,9 +35,6 @@ def create_layout():
         html.Div([
             dcc.Graph(id='aq-timeseries-plot'),
             dcc.Graph(id='aq-boxplot'),
-            dcc.Graph(id='aq-scatterplot'),
-            dcc.Graph(id='aq-calendar-heatmap'),
-            dcc.Graph(id='aq-bar-chart'),
         ], style={'padding': '20px'})
 
-    ], style={'backgroundColor': '#4482C1', 'padding': '30px', 'minHeight': '100vh'}) 
+    ], style={'backgroundColor': '#363636', 'padding': '30px', 'minHeight': '100vh'}) 

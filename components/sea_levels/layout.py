@@ -8,9 +8,6 @@ from .data import load_sea_level_data, load_sea_ice_data, calculate_seasonal_cyc
 def create_sea_levels_layout():
     """Create the layout for sea levels component."""
     return html.Div([
-        # Hidden div to trigger callbacks
-        html.Div(id='sea-levels-container', children=['initialized']),
-        
         html.Div(
             children=[
                 html.H1(
@@ -42,18 +39,6 @@ def create_sea_levels_layout():
                             'marginBottom': '20px',
                             'fontSize': '1.8em'
                         }
-                    ),
-                    dcc.Loading(
-                        id="loading-sea-level",
-                        type="default",
-                        children=dcc.Graph(
-                            id='sea-level-bar',
-                            style={
-                                'margin': 'auto',
-                                'marginBottom': '20px',
-                                'border': '3px solid #2A547E'
-                            }
-                        )
                     ),
                     # Scatter plot for sea level
                     dcc.Loading(
@@ -152,7 +137,7 @@ def create_sea_levels_layout():
         )
     ],
     style={
-        'background-color': '#4482C1',
+        'background-color': '#000066',
         'padding': '30px',
         'minHeight': '100vh'
     })

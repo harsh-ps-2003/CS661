@@ -72,8 +72,7 @@ fig11 = px.choropleth_mapbox(df1, locations="id", geojson=india_states,
     center={"lat": 20.5937, "lon": 78.9629}, 
     zoom=3.5,
     opacity=0.7,
-    width=1000,
-    height=600
+    height=700
 )
 
 fig21 = px.choropleth_mapbox(df2, locations="id", geojson=china_states, 
@@ -86,8 +85,7 @@ fig21 = px.choropleth_mapbox(df2, locations="id", geojson=china_states,
     center={"lat": 35.8617, "lon": 104.1954}, 
     zoom=2.8,
     opacity=0.7,
-    width=1000,
-    height=600
+    height=700
 )
 
 fig31 = px.choropleth_mapbox(df3, locations="id", geojson=can_states, 
@@ -100,8 +98,7 @@ fig31 = px.choropleth_mapbox(df3, locations="id", geojson=can_states,
     center={"lat": 56.1304, "lon": -106.3468}, 
     zoom=2.5,
     opacity=0.7,
-    width=1000,
-    height=600
+    height=700
 )
 
 fig41 = px.choropleth_mapbox(df4, locations="id", geojson=brz_states, 
@@ -114,8 +111,7 @@ fig41 = px.choropleth_mapbox(df4, locations="id", geojson=brz_states,
     center={"lat": -14.2350, "lon": -51.9253}, 
     zoom=2.8,
     opacity=0.7,
-    width=1000,
-    height=600
+    height=700
 )
 
 fig51 = px.choropleth_mapbox(df5, locations="id", geojson=rus_states, 
@@ -128,8 +124,7 @@ fig51 = px.choropleth_mapbox(df5, locations="id", geojson=rus_states,
     center={"lat": 61.5240, "lon": 105.3188}, 
     zoom=2.2,
     opacity=0.7,
-    width=1000,
-    height=600
+    height=700
 )
 
 fig61 = px.choropleth_mapbox(df6, locations="id", geojson=us_states, 
@@ -142,8 +137,7 @@ fig61 = px.choropleth_mapbox(df6, locations="id", geojson=us_states,
     center={"lat": 37.0902, "lon": -95.7129}, 
     zoom=3,
     opacity=0.7,
-    width=1000,
-    height=600
+    height=700
 )
 
 # Update dimensions and styling for all country maps
@@ -170,18 +164,17 @@ for fig in [fig11, fig21, fig31, fig41, fig51, fig61]:
         )
     )
 
-fig_heat = px.density_map(data_heatmap, lat='Latitude_Float', lon='Longitude_Float', z='AverageTemperature', hover_data=["City"], radius=8, zoom=1, map_style="carto-positron", animation_frame='dt', opacity=0.5, title='Average Temperature Heatmap by Cities')
+fig_heat = px.density_map(data_heatmap.sort_values('dt'), lat='Latitude_Float', lon='Longitude_Float', z='AverageTemperature', hover_data=["City"], radius=8, zoom=1, map_style="carto-positron", animation_frame='dt', opacity=0.5, title='Average Temperature Heatmap by Cities')
 
 df_choro = df_choro_data.dropna()
 df_choro['date'] = pd.to_datetime(df_choro['dt'])
 df_choro['Year'] = df_choro['date'].dt.year
 df_choro = df_choro.groupby(['Country', 'Year'])['AverageTemperature'].mean().reset_index()
-fig_choro = px.choropleth(df_choro, locations='Country', locationmode='country names', color='AverageTemperature', color_continuous_scale='Turbo', animation_frame='Year', title='Choropleth Map - Average Temperatures by Country')
+fig_choro = px.choropleth(df_choro.sort_values('Year'), locations='Country', locationmode='country names', color='AverageTemperature', color_continuous_scale='Turbo', animation_frame='Year', title='Choropleth Map - Average Temperatures by Country')
 
 # Update the choropleth map dimensions and styling
 fig_choro.update_layout(
-    width=1000,
-    height=550,
+    height=600,
     margin=dict(l=20, r=20, t=40, b=20),
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(0,0,0,0)',
@@ -201,8 +194,7 @@ fig_choro.update_layout(
 
 # Update the heatmap dimensions and styling
 fig_heat.update_layout(
-    width=1000,
-    height=550,
+    height=600,
     margin=dict(l=20, r=20, t=40, b=20),
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(0,0,0,0)',
@@ -231,8 +223,7 @@ layout_globe = dict(title='Average land temperature in countries', geo=dict(show
 
 # Update the globe dimensions and styling
 layout_globe.update(
-    width=1000,
-    height=550,
+    height=600,
     margin=dict(l=20, r=20, t=40, b=20),
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(0,0,0,0)',
@@ -260,13 +251,11 @@ df = load_major_city_temps()
 df = pd.merge(left=df, right=continent_map[['Country', 'Region']], on='Country', how='left')
 mask = (df['Year'] > 1994) & (df['Year'] < 2020) & (df['AverageTemperature'] > -70)
 df = df[mask].copy()
-df.loc[:, 'AverageTemperature'] = (df['AverageTemperature'] - 32) * (5/9)
 fig_lines = px.line(df.groupby(['Region', 'Year'])['AverageTemperature'].mean().reset_index(), x='Year', y='AverageTemperature', color='Region', title='Average temperatures of Continents over the years 1994 to 2019', hover_data={'Year': False, 'AverageTemperature': ':.2f'}, labels={'AverageTemperature': 'Avg Temp'})
 
 # Update line plot
 fig_lines.update_layout(
-    width=1000,
-    height=400,
+    height=450,
     margin=dict(l=20, r=20, t=40, b=20),
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgb(245, 245, 245)',
@@ -277,9 +266,63 @@ fig_lines.update_layout(
     yaxis=dict(showgrid=True, gridwidth=1, gridcolor='rgb(228, 228, 228)')
 )
 
+# Filter data from 1900 onwards for choropleth and bar chart
+df_choro = df_choro_data.dropna()
+df_choro['date'] = pd.to_datetime(df_choro['dt'])
+df_choro['Year'] = df_choro['date'].dt.year
+df_choro = df_choro[df_choro['Year'] >= 1900]
+
+# Create temperature difference bar chart
+temp_diff_df = df_choro.groupby('Country')['AverageTemperature'].agg(['first', 'last']).reset_index()
+temp_diff_df['diff'] = temp_diff_df['last'] - temp_diff_df['first']
+temp_diff_df = temp_diff_df.sort_values('diff', ascending=True)
+
+fig_diff_bar = px.bar(
+    temp_diff_df,
+    y='Country',
+    x='diff',
+    orientation='h',
+    title='Countries Rank - from the biggest to smallest increase in temperature since 1900',
+    labels={'diff': 'Temperature Increase (°C)'},
+    color='diff',
+    color_continuous_scale='RdBu_r'
+)
+
+fig_choro = px.choropleth(
+    df_choro.sort_values('Year'),
+    locations='Country',
+    locationmode='country names',
+    color='AverageTemperature',
+    color_continuous_scale='Turbo',
+    animation_frame='Year',
+    title='Choropleth Map - Average Temperatures by Country'
+)
+
+# Update the choropleth map dimensions and styling
+fig_choro.update_layout(
+    height=600,
+    margin=dict(l=20, r=20, t=40, b=20),
+    paper_bgcolor='rgba(0,0,0,0)',
+    plot_bgcolor='rgba(0,0,0,0)',
+    title_x=0.5,
+    title_y=0.95,
+    title_font_size=20,
+    geo=dict(
+        showframe=True,
+        showcoastlines=True,
+        projection_type='equirectangular',
+        showland=True,
+        showcountries=True,
+        landcolor='rgb(243, 243, 243)',
+        countrycolor='rgb(204, 204, 204)'
+    )
+)
+
 def create_temperature_layout():
     # Get unique countries and years for dropdowns
-    df = load_major_city_temps()
+    df = load_temps_by_city()
+    df['dt'] = pd.to_datetime(df['dt'])
+    df['Year'] = df['dt'].dt.year
     countries = sorted(df['Country'].unique())
     years = sorted(df['Year'].unique())
     
@@ -297,6 +340,16 @@ def create_temperature_layout():
                 ),
             ], style={'margin': '20px', 'padding': '25px', 'backgroundColor': 'white', 'borderRadius': '15px', 'boxShadow': '0 4px 6px rgba(0, 0, 0, 0.1)'}),
             
+            # Temperature Rank Section
+            html.Div([
+                html.H3('Country Temperature Increase Ranking', style={'textAlign': 'center', 'marginBottom': '20px', 'color': '#2c3e50', 'fontSize': '1.8em'}),
+                dcc.Graph(
+                    id="diff-bar",
+                    figure=fig_diff_bar,
+                    style={'height': '800px'}
+                ),
+            ], style={'margin': '20px', 'padding': '25px', 'backgroundColor': 'white', 'borderRadius': '15px', 'boxShadow': '0 4px 6px rgba(0, 0, 0, 0.1)'}),
+
             # Temperature Timeline Section
             html.Div([
                 html.H3('Temperature Timeline', style={'textAlign': 'center', 'marginBottom': '20px', 'color': '#2c3e50', 'fontSize': '1.8em'}),
@@ -313,16 +366,6 @@ def create_temperature_layout():
                 dcc.Graph(
                     id="Globe",
                     figure=fig_globe,
-                    style={'margin': 'auto'}
-                ),
-            ], style={'margin': '20px', 'padding': '25px', 'backgroundColor': 'white', 'borderRadius': '15px', 'boxShadow': '0 4px 6px rgba(0, 0, 0, 0.1)'}),
-            
-            # City Temperature Heatmap Section
-            html.Div([
-                html.H3('City Temperature Heatmap', style={'textAlign': 'center', 'marginBottom': '20px', 'color': '#2c3e50', 'fontSize': '1.8em'}),
-                dcc.Graph(
-                    id="Heatmap",
-                    figure=fig_heat,
                     style={'margin': 'auto'}
                 ),
             ], style={'margin': '20px', 'padding': '25px', 'backgroundColor': 'white', 'borderRadius': '15px', 'boxShadow': '0 4px 6px rgba(0, 0, 0, 0.1)'}),
@@ -366,43 +409,11 @@ def create_temperature_layout():
                 ),
             ], style={'margin': '20px', 'padding': '25px', 'backgroundColor': 'white', 'borderRadius': '15px', 'boxShadow': '0 4px 6px rgba(0, 0, 0, 0.1)'}),
             
-            # Monthly Temperature Analysis Section
-            html.Div([
-                html.H3('Monthly Temperature Analysis', style={'textAlign': 'center', 'marginBottom': '20px', 'color': '#2c3e50', 'fontSize': '1.8em'}),
-                html.Div([
-                    html.Label('Select Country', style={'fontSize': '16px', 'fontWeight': 'bold', 'color': '#2c3e50', 'marginTop': '10px'}),
-                    dcc.Dropdown(
-                        id='country-dropdown',
-                        options=[{'label': country, 'value': country} for country in countries],
-                        value=countries[0] if countries else None,
-                        placeholder='Select a country',
-                        style={'marginBottom': '15px'}
-                    ),
-                    html.Label('Select City', style={'fontSize': '16px', 'fontWeight': 'bold', 'color': '#2c3e50', 'marginTop': '10px'}),
-                    dcc.Dropdown(
-                        id='city-dropdown',
-                        placeholder='Select a city',
-                        style={'marginBottom': '15px'}
-                    ),
-                    html.Label('Select Year', style={'fontSize': '16px', 'fontWeight': 'bold', 'color': '#2c3e50', 'marginTop': '10px'}),
-                    dcc.Dropdown(
-                        id='year-dropdown',
-                        options=[{'label': str(year), 'value': year} for year in years],
-                        value=years[-1] if years else None,
-                        placeholder='Select a year',
-                        style={'marginBottom': '15px'}
-                    ),
-                ], style={'width': '60%', 'margin': '20px auto', 'padding': '20px', 'backgroundColor': '#f8f9fa', 'borderRadius': '10px'}),
-                dcc.Graph(
-                    id='monthly-temperature',
-                    style={'margin': 'auto'}
-                ),
-            ], style={'margin': '20px', 'padding': '25px', 'backgroundColor': 'white', 'borderRadius': '15px', 'boxShadow': '0 4px 6px rgba(0, 0, 0, 0.1)'})
         ],
         style={
-            'background-color': '#4482C1',
+            'background-color': '#660000',
             'padding': '30px',
-            'maxWidth': '1400px',  # Increased from 1200px
+            'maxWidth': '100%',
             'margin': 'auto',
             'minHeight': '100vh'
         }

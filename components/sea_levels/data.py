@@ -63,24 +63,17 @@ def load_sea_ice_data():
         return pd.DataFrame(columns=['Date', 'Year', 'Month', 'DayOfYear', 'Extent'])
 
 def calculate_seasonal_cycle(df):
-    """Calculate seasonal cycle statistics by day of year."""
-    try:
-        if df.empty:
-            logger.warning("Empty dataframe provided for seasonal cycle calculation")
-            return pd.DataFrame(columns=['DayOfYear', 'Mean_Extent', 'Std_Extent', 'Min_Extent', 'Max_Extent'])
-            
-        seasonal_stats = df.groupby('DayOfYear').agg({
-            'Extent': ['mean', 'std', 'min', 'max']
-        }).round(3)
-        
-        seasonal_stats.columns = ['Mean_Extent', 'Std_Extent', 'Min_Extent', 'Max_Extent']
-        seasonal_stats = seasonal_stats.reset_index()
-        
-        logger.info(f"Calculated seasonal cycle stats for {len(seasonal_stats)} days")
-        return seasonal_stats
-    except Exception as e:
-        logger.error(f"Error calculating seasonal cycle: {e}")
-        return pd.DataFrame(columns=['DayOfYear', 'Mean_Extent', 'Std_Extent', 'Min_Extent', 'Max_Extent'])
+    """
+    Calculates the mean and standard deviation of sea ice extent for each day of the year.
+    This helps in visualizing the annual seasonal cycle.
+    """
+    df['DayOfYear'] = df['Date'].dt.dayofyear
+    seasonal_stats = df.groupby('DayOfYear')['Extent'].agg(['mean', 'std']).reset_index()
+    seasonal_stats.rename(columns={'mean': 'Mean_Extent', 'std': 'Std_Extent'}, inplace=True)
+    # Apply a 7-day rolling mean for smoothing
+    seasonal_stats['Smoothed_Mean_Extent'] = seasonal_stats['Mean_Extent'].rolling(window=7, center=True, min_periods=1).mean()
+    return seasonal_stats
+
 
 def calculate_monthly_trends(df):
     """Calculate monthly trends over time."""
