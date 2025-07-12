@@ -41,17 +41,15 @@ def update_scatterplot(countries, gas):
 @callback(
     Output('ghg-top-5-bar', 'figure'),
     Output('ghg-bottom-5-bar', 'figure'),
-    Output('ghg-top-5-line', 'figure'),
-    Output('ghg-bottom-5-line', 'figure'),
     Input('ghg-gas-dropdown', 'value')
 )
 def update_bar_line_charts(gas):
     if not gas:
-        return go.Figure(), go.Figure(), go.Figure(), go.Figure()
+        return go.Figure(), go.Figure()
 
     gas_df = df_cached[df_cached['gas'] == gas]
     if gas_df.empty:
-        return go.Figure(), go.Figure(), go.Figure(), go.Figure()
+        return go.Figure(), go.Figure()
 
     top_countries, bottom_countries = get_top_bottom_countries(gas, n=5)
 
@@ -86,7 +84,7 @@ def update_bar_line_charts(gas):
             font=dict(family="Courier New, monospace", size=12, color="black")
         )
 
-    return fig_top_5_bar, fig_bottom_5_bar, fig_top_5_line, fig_bottom_5_line
+    return fig_top_5_bar, fig_bottom_5_bar
 
 @callback(
     Output('ghg-continent-pie-chart', 'figure'),

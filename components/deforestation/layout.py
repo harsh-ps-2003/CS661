@@ -6,6 +6,33 @@ from .data import load_deforestation_data, calculate_regional_stats
 # Load and process data
 df, time_series_df = load_deforestation_data()
 regional_stats = calculate_regional_stats(df)
+
+# ------------------------------------------------------------------
+# Build Choropleth Map - % Forest Remaining (2020 vs 2000)
+# ------------------------------------------------------------------
+
+# Compute percentage remaining
+df['Percent_Remain'] = (df['forests_2020'] / df['forests_2000']) * 100.0
+
+fig_map = px.choropleth(
+    df,
+    locations='Country and Area',
+    locationmode='country names',
+    color='Percent_Remain',
+    hover_name='Country and Area',
+    hover_data={'Percent_Remain': ':.2f', 'forests_2020': ':,', 'forests_2000': ':,'},
+    color_continuous_scale='Greens',
+    range_color=(df['Percent_Remain'].min(), df['Percent_Remain'].max()),
+    labels={'Percent_Remain': '% Forests Left'},
+    title='% Forest Cover Remaining (2020 vs 2000)'
+)
+
+fig_map.update_layout(
+    geo=dict(showframe=False, showcoastlines=False, projection_type='natural earth'),
+    margin=dict(l=0, r=0, t=50, b=0),
+    coloraxis_colorbar=dict(title='% Remaining')
+)
+
 regional_time_series = time_series_df.groupby(['Region', 'Year'])['Forest_Cover'].mean().reset_index()
 
 # Define a consistent color palette for regions
@@ -73,6 +100,12 @@ fig_line.update_layout(
 def create_deforestation_layout():
     return html.Div([
         html.H1("Global Deforestation Analysis", style={'textAlign': 'center', 'color': 'white'}),
+
+        # Choropleth Map Section
+        html.Div([
+            html.H3("Global Forests Remaining (2020 vs 2000)", style={'textAlign': 'center'}),
+            dcc.Graph(id='deforestation-choropleth', figure=fig_map, style={'height': '600px'})
+        ], style={'padding': '20px', 'backgroundColor': 'white', 'borderRadius': '15px', 'margin': '20px'}),
 
         # Bar Plot Section
             html.Div([
