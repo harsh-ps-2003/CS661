@@ -28,5 +28,5 @@ def get_cities(country):
     return sorted(df[df['country'] == country]['city'].unique())
 
 def get_metrics():
-    """Return a list of metrics available for visualization."""
-    return ['pm25', 'pm10', 'no2', 'so2', 'co', 'o3', 'temperature', 'humidity', 'wind_speed'] 
+    """Return a list of metrics available for visualization, excluding temperature."""
+    return ['pm25', 'pm10', 'no2', 'so2', 'co', 'o3', 'humidity', 'wind_speed'] 
