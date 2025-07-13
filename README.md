@@ -15,7 +15,6 @@ If I see your work is trivial, insufficient, and does not meet the quality bar d
 * You are expected to write a comprehensive report of your work that describes the details of the methodologies and visualization techniques that you have used
 * ⁠You should justify your design choices for your interface, such as: Why a bar chart and a not a pie chart!
 
-
 * ⁠Grading will be done on your overall idea + quality of work, presentation, and report
 * ⁠Total marks: 300
 * ⁠Overall quality: 100

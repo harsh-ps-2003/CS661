@@ -93,6 +93,7 @@ def create_layout():
     )
 
     # --- Multi-line plot: Death rate from air pollution by type (country/region, 1990 & 2021) ---
+    dr_df = get_death_rate_by_pollution_type()
     line_fig = go.Figure()
     line_colors = {
         'Air pollution (total)': '#a6761d',  # brown
