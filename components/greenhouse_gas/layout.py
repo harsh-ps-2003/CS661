@@ -97,7 +97,7 @@ def create_layout():
 
     fig_continent_total.update_layout(
         title=dict(
-            text=f'Continental Greenhouse Gas Emissions by Type ({latest_yr})',
+            text=f'Continental Greenhouse Gas Emissions by Type',
             font=dict(size=24, color='black')
         ),
         plot_bgcolor='white',
@@ -146,32 +146,31 @@ def create_layout():
         ),
 
         html.Div([
-            html.Div([
-                html.Label('Select Gas:', style={'color': 'white', 'marginRight': '10px'}),
-                dcc.Dropdown(
-                    id='ghg-gas-dropdown',
-                    options=[{'label': g, 'value': g} for g in gases],
-                    value=gases[0],
-                    clearable=False,
-                    style={'width': '300px'}
-                )
-            ], style={'marginBottom': '20px'}),
-            html.Div([
-                html.Label("Select countries to display for scatter plot:", style={'color': 'white'}),
-                dcc.Dropdown(
-                    id="ghg-country-dropdown",
-                    options=[{"label": country, "value": country} for country in countries],
-                    value=countries[:2] if countries else [],
-                    multi=True,
-                    style={'width': '700px'}
-                )
-            ], style={'marginBottom': '20px'}),
-        ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'}),
+            html.Label('Select Gas:', style={'color': 'white', 'marginRight': '10px'}),
+            dcc.Dropdown(
+                id='ghg-gas-dropdown',
+                options=[{'label': g, 'value': g} for g in gases],
+                value=gases[0],
+                clearable=False,
+                style={'width': '300px'}
+            )
+        ], style={'marginBottom': '20px', 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'}),
 
-        # Graphs
+        # --- Racing Bar Chart Section ---
+        html.H1(id='racing-bar-title', children='Top 10 Emitting Countries - Growth', style={'font-size': '20px', 'color': 'white', 'padding-left': '10px'}),
+        dcc.Graph(id='ghg-racing-bar', style={"margin-bottom": "10px", 'border': '3px solid #2A547E'}),
+        dcc.Interval(id='ghg-interval-component', interval=600, n_intervals=0),
+        html.Div(
+            children=[
+                dcc.Graph(id='ghg-top-5-bar', style={"margin-bottom": "10px", 'border': '3px solid #2A547E'}),
+                dcc.Graph(id='ghg-bottom-5-bar', style={"margin-bottom": "10px", 'border': '3px solid #2A547E'}),
+            ],
+            style={"display": "flex", "flex-direction": "row", "justify-content": "space-between", "width": "100%"}
+        ),
+
+        # --- Pie Chart with Year Slider Section ---
         html.Div([
-            dcc.Graph(id="ghg-scatterplot", style={"margin-bottom": "10px", 'border': '3px solid #2A547E'}),
-            html.H3("Continent Emissions", style={'textAlign': 'center', 'color': 'white'}),
+            html.H3("Continent Emissions", style={'textAlign': 'center', 'color': 'black'}),
             dcc.Graph(id='ghg-continent-pie-chart', style={"margin-bottom": "10px", 'border': '3px solid #2A547E'}),
             dcc.Slider(
                 id='ghg-year-slider-pie',
@@ -180,16 +179,22 @@ def create_layout():
                 value=max_year,
                 marks={str(year): str(year) for year in range(min_year, max_year + 1, 5)},
                 step=1,
+                tooltip={"placement": "bottom", "always_visible": True},
+                updatemode='mouseup',
+                included=True,
             ),
-            html.H1(id='racing-bar-title', children='Top 10 Emitting Countries - Growth', style={'font-size': '20px', 'color': 'white', 'padding-left': '10px'}),
-            dcc.Graph(id='ghg-racing-bar', style={"margin-bottom": "10px", 'border': '3px solid #2A547E'}),
-            dcc.Interval(id='ghg-interval-component', interval=600, n_intervals=0),
-            html.Div(
-                children=[
-                    dcc.Graph(id='ghg-top-5-bar', style={"margin-bottom": "10px", 'border': '3px solid #2A547E'}),
-                    dcc.Graph(id='ghg-bottom-5-bar', style={"margin-bottom": "10px", 'border': '3px solid #2A547E'}),
-                ],
-                style={"display": "flex", "flex-direction": "row", "justify-content": "space-between", "width": "100%"}
+        ], style={'background': 'white', 'padding': '20px', 'border-radius': '10px', 'margin': '30px auto', 'width': '90%', 'box-shadow': '0 2px 8px rgba(0,0,0,0.08)'}),
+
+        # --- Scatter Plot Section ---
+        html.Div([
+            html.Label("Select countries to display for scatter plot:", style={'color': 'white'}),
+            dcc.Dropdown(
+                id="ghg-country-dropdown",
+                options=[{"label": country, "value": country} for country in countries],
+                value=countries[:2] if countries else [],
+                multi=True,
+                style={'width': '700px'}
             ),
-        ], style={'margin': 'auto', 'width': '95%'}),
+            dcc.Graph(id="ghg-scatterplot", style={"margin-bottom": "10px", 'border': '3px solid #2A547E', 'width': '100%'}),
+        ], style={'marginBottom': '20px', 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center', 'width': '95%', 'margin': 'auto'}),
     ], style={'backgroundColor': '#3B2F70', 'padding': '30px', 'minHeight': '100vh'}) 

@@ -18,13 +18,15 @@ def update_scatterplot(countries, gas):
         return go.Figure()
 
     filtered_df = df_cached[(df_cached['country'].isin(countries)) & (df_cached['gas'] == gas)]
-    
-    fig = px.scatter(
-        filtered_df,
+    # Group by country and year to ensure only one line per country
+    grouped_df = filtered_df.groupby(['country', 'year'], as_index=False)['value'].sum()
+
+    fig = px.line(
+        grouped_df,
         x="year",
         y="value",
         color="country",
-        title=f"Scatter Plot - Average {gas} Emissions by Country",
+        title=f"Line Chart - Average {gas} Emissions by Country",
         labels={'value': f'{gas} Emissions', 'year': 'Year'},
         hover_data=["country"]
     )

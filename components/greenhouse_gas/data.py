@@ -340,15 +340,21 @@ def load_clean_data() -> pd.DataFrame:
     return df_combined
 
 def get_continent_emissions(gas: str, year: int) -> pd.DataFrame:
-    """Calculate total emissions per continent for a given gas and year."""
+    """Calculate total emissions per continent for a given gas and year, merging Oceania and Unknown as 'Rest of the World'."""
     df = load_clean_data()
-    
     # Add continent information for the calculation
-    df['continent'] = df['country'].apply(_get_continent)    
- 
+    df['continent'] = df['country'].apply(_get_continent)
     df_year = df[(df['year'] == year) & (df['gas'] == gas)]
     continent_emissions = df_year.groupby('continent')['value'].sum().reset_index()
-    
+    # Merge Oceania and Unknown as 'Rest of the World'
+    mask = continent_emissions['continent'].isin(['Oceania', 'Unknown'])
+    rest_sum = continent_emissions.loc[mask, 'value'].sum()
+    continent_emissions = continent_emissions[~mask]
+    if rest_sum > 0:
+        continent_emissions = pd.concat([
+            continent_emissions,
+            pd.DataFrame({'continent': ['Rest of the World'], 'value': [rest_sum]})
+        ], ignore_index=True)
     return continent_emissions
 
 def available_gases():
