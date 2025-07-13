@@ -4,6 +4,12 @@ import pandas as pd
 import numpy as np
 
 from .data import get_countries, get_metrics, load_air_quality_data
+# Import the new data function
+from .data import get_deaths_by_age_data
+# Import the new data function
+from .data import get_deaths_by_risk_factor_data
+from .data import get_death_rate_by_pollution_type
+import plotly.graph_objects as go
 
 # ------------------------------------------------------------------
 # Build choropleth of composite air quality (considering all pollutants)
@@ -62,6 +68,65 @@ def create_layout():
     countries = get_countries()
     metrics = get_metrics()
 
+    # --- Horizontal bar plot: Deaths by risk factor (World, 2021) ---
+    risk_df = get_deaths_by_risk_factor_data()
+    risk_df = risk_df.sort_values('Deaths', ascending=True)
+    bar_fig = go.Figure(go.Bar(
+        x=risk_df['Deaths'],
+        y=risk_df['Risk Factor'],
+        orientation='h',
+        marker_color='#627fa3',
+        text=[f"{d/1_000_000:.2f} million" if d >= 1_000_000 else f"{int(d):,}" for d in risk_df['Deaths']],
+        textposition='outside',
+        insidetextanchor='end',
+    ))
+    bar_fig.update_layout(
+        title='Deaths by risk factor, World, 2021',
+        xaxis_title='Annual deaths',
+        yaxis_title='',
+        paper_bgcolor='white',
+        plot_bgcolor='#f8f9fa',
+        font_color='black',
+        margin=dict(l=40, r=40, t=60, b=40),
+        height=800,
+        xaxis=dict(tickformat=",d", gridcolor='#e5e5e5'),
+    )
+
+    # --- Multi-line plot: Death rate from air pollution by type (country/region, 1990 & 2021) ---
+    line_fig = go.Figure()
+    line_colors = {
+        'Air pollution (total)': '#a6761d',  # brown
+        'Indoor air pollution': '#d95f02',   # red
+        'Outdoor particulate matter': '#1b9e77',  # green
+        'Outdoor ozone pollution': '#386cb0',  # blue
+    }
+    # Default to 'World' if present, else first country
+    default_country = 'World' if 'World' in dr_df['Country or region'].unique() else dr_df['Country or region'].unique()[0]
+    selected_country = default_country
+    dr_country = dr_df[dr_df['Country or region'] == selected_country]
+    for col in ['Air pollution (total)', 'Indoor air pollution', 'Outdoor particulate matter', 'Outdoor ozone pollution']:
+        line_fig.add_trace(go.Scatter(
+            x=dr_country['Year'],
+            y=dr_country[col],
+            mode='lines+markers',
+            name=col,
+            line=dict(color=line_colors[col], width=3, shape='spline'),
+            marker=dict(size=8),
+        ))
+    line_fig.update_layout(
+        title=f'Death rate from air pollution, {selected_country}',
+        yaxis_title='Deaths per 100,000 population',
+        xaxis_title='Year',
+        legend_title='',
+        paper_bgcolor='white',
+        plot_bgcolor='#f8f9fa',
+        font_color='black',
+        margin=dict(l=40, r=40, t=60, b=40),
+        height=500,
+        yaxis=dict(gridcolor='#e5e5e5'),
+        xaxis=dict(dtick=1, gridcolor='#e5e5e5', tickmode='array', tickvals=[1990, 2021]),
+    )
+
     return html.Div([
         html.H1("Global Air Quality Analysis", style={'textAlign': 'center', 'color': 'white'}),
 
@@ -97,6 +162,11 @@ def create_layout():
         html.Div([
             dcc.Graph(id='aq-timeseries-plot'),
             dcc.Graph(id='aq-boxplot'),
-        ], style={'padding': '20px'})
+        ], style={'padding': '20px'}),
+
+        # Bar plot section: Deaths by risk factor (moved to bottom)
+        html.Div([
+            dcc.Graph(id='aq-deaths-by-risk-bar', figure=bar_fig)
+        ], style={'padding': '20px', 'backgroundColor': 'white', 'borderRadius': '15px', 'margin': '20px'}),
 
     ], style={'backgroundColor': '#363636', 'padding': '30px', 'minHeight': '100vh'}) 
