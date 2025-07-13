@@ -28,6 +28,22 @@ If I see your work is trivial, insufficient, and does not meet the quality bar d
 ## Architecture
 
 ### Data Management Pipeline
+
+#### Why and How We Load Data into DataFrames
+
+All raw data in this project is loaded into pandas DataFrames because DataFrames provide a powerful, flexible, and efficient structure for tabular data. This allows us to:
+- Easily handle large datasets with heterogeneous columns (e.g., country, year, metric values)
+- Perform fast filtering, aggregation, reshaping, and joining operations
+- Apply robust data cleaning and transformation routines using a consistent API
+- Seamlessly integrate with visualization libraries like Plotly
+
+**How it works:**
+1. Data is loaded from CSV or JSON files using `pandas.read_csv()` or `pandas.read_json()`, resulting in a DataFrame for each dataset.
+2. The DataFrame is the central object for all subsequent processing: cleaning, type conversion, aggregation, outlier removal, normalization, and merging.
+3. After processing, the DataFrame is passed directly to plotting functions or used in callback logic for interactive dashboards.
+
+This approach ensures that all data transformations are explicit, reproducible, and easy to debug, while leveraging the full power of the pandas ecosystem for data science and analytics.
+
 - **Data Sources**: All raw data is stored in the `dataset/` directory (CSV, JSON, etc).
 - **Domain Modules**: Each domain (air quality, greenhouse gas, deforestation, etc.) has a dedicated `data.py` module in `components/` for:
   - Loading raw data
@@ -36,7 +52,7 @@ If I see your work is trivial, insufficient, and does not meet the quality bar d
   - Outlier management (using IQR or domain-specific rules)
   - Data transformation (reshaping, aggregating, merging datasets)
 - **Outlier Detection**: The Interquartile Range (IQR) method is used:
-  - For each metric, values outside `[Q1 - 1.5*IQR, Q3 + 1.5*IQR]` are flagged or removed.
+  - For each metric, values outside `[Q1 - 1.5*IQR, Q3 + 1.5*IQR]` are removed.
 - **Normalization**: Applied as needed (e.g., for composite scores) to ensure comparability across metrics and countries.
 - **Caching**: Cleaned data is cached in memory for fast access by the frontend.
 
