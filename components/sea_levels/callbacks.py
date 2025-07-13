@@ -129,11 +129,12 @@ def update_sea_level_figures(_):
 
     # 2. Trend Line Calculation
     trend_data = df_sea_ice.dropna(subset=['Extent'])
-    x_numeric = pd.to_numeric(trend_data['Date'])
-    z = np.polyfit(x_numeric, trend_data['Extent'], 1)
+    # Convert Date to fractional years for regression
+    years = trend_data['Date'].dt.year + (trend_data['Date'].dt.dayofyear - 1) / 365.25
+    z = np.polyfit(years, trend_data['Extent'], 1)
     p = np.poly1d(z)
-    df_sea_ice['trend'] = p(pd.to_numeric(df_sea_ice['Date']))
-    slope_per_decade = z[0] * 365.25 * 10
+    df_sea_ice['trend'] = p(df_sea_ice['Date'].dt.year + (df_sea_ice['Date'].dt.dayofyear - 1) / 365.25)
+    slope_per_decade = z[0] * 10
 
     # 3. Annual Min/Max
     annual_mins = df_sea_ice.loc[df_sea_ice.groupby(df_sea_ice['Date'].dt.year)['Extent'].idxmin()]
@@ -174,13 +175,17 @@ def update_sea_level_figures(_):
 
     # 5. Update layout and add annotation
     fig_extent.update_layout(
-        title='Daily Sea Ice Extent with Trend and Variability',
+        title='Trends in Sea Ice Extent Over Years',
         yaxis_title='Sea Ice Extent (million km²)',
         xaxis_title='Year', hovermode='x unified', legend=dict(x=0.01, y=0.99)
     )
+    # Fix negative zero for trend annotation
+    trend_val = slope_per_decade
+    if np.isclose(trend_val, 0, atol=1e-2):
+        trend_val = 0.00
     fig_extent.add_annotation(
         x=0.99, y=0.99, xref='paper', yref='paper',
-        text=f'Trend: {slope_per_decade:.2f} million km²/decade',
+        text=f'Trend: {trend_val:.2f} million km²/decade',
         showarrow=False, font=dict(size=12, color="red"), align="right"
     )
 

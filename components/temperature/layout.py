@@ -266,27 +266,7 @@ fig_lines.update_layout(
     yaxis=dict(showgrid=True, gridwidth=1, gridcolor='rgb(228, 228, 228)')
 )
 
-# Filter data from 1900 onwards for choropleth and bar chart
-df_choro = df_choro_data.dropna()
-df_choro['date'] = pd.to_datetime(df_choro['dt'])
-df_choro['Year'] = df_choro['date'].dt.year
-df_choro = df_choro[df_choro['Year'] >= 1900]
-
-# Create temperature difference bar chart
-temp_diff_df = df_choro.groupby('Country')['AverageTemperature'].agg(['first', 'last']).reset_index()
-temp_diff_df['diff'] = temp_diff_df['last'] - temp_diff_df['first']
-temp_diff_df = temp_diff_df.sort_values('diff', ascending=True)
-
-fig_diff_bar = px.bar(
-    temp_diff_df,
-    y='Country',
-    x='diff',
-    orientation='h',
-    title='Countries Rank - from the biggest to smallest increase in temperature since 1900',
-    labels={'diff': 'Temperature Increase (°C)'},
-    color='diff',
-    color_continuous_scale='RdBu_r'
-)
+# Remove the temperature difference bar chart and related data
 
 fig_choro = px.choropleth(
     df_choro.sort_values('Year'),
@@ -337,16 +317,6 @@ def create_temperature_layout():
                     id="Choro",
                     figure=fig_choro,
                     style={'margin': 'auto'}
-                ),
-            ], style={'margin': '20px', 'padding': '25px', 'backgroundColor': 'white', 'borderRadius': '15px', 'boxShadow': '0 4px 6px rgba(0, 0, 0, 0.1)'}),
-            
-            # Temperature Rank Section
-            html.Div([
-                html.H3('Country Temperature Increase Ranking', style={'textAlign': 'center', 'marginBottom': '20px', 'color': '#2c3e50', 'fontSize': '1.8em'}),
-                dcc.Graph(
-                    id="diff-bar",
-                    figure=fig_diff_bar,
-                    style={'height': '800px'}
                 ),
             ], style={'margin': '20px', 'padding': '25px', 'backgroundColor': 'white', 'borderRadius': '15px', 'boxShadow': '0 4px 6px rgba(0, 0, 0, 0.1)'}),
 

@@ -71,29 +71,128 @@ fig_bar.update_layout(
     plot_bgcolor='#f8f9fa'
 )
 
-# --- Improved Line Plot ---
-fig_line = go.Figure()
+# --- Deforestation and Net Loss per Decade Data (from image) ---
+deforestation_decades = ['1990s', '2000s', '2010s']
+deforestation_vals = [-158, -151, -110]  # in Mha
+deforestation_text = ['-158 Mha', '-151 Mha', '-110 Mha']
 
-for region in regional_time_series['Region'].unique():
-    region_df = regional_time_series[regional_time_series['Region'] == region]
-    fig_line.add_trace(go.Scatter(
-        x=region_df['Year'],
-        y=region_df['Forest_Cover'],
-        mode='lines+markers',
-        name=region,
-        line=dict(color=region_colors[region], width=2),
-        marker=dict(size=8)
+net_change_vals = [-78, -52, -47]  # in Mha
+net_change_text = ['-78 Mha', '-52 Mha', '-47 Mha']
+
+fig_decade = go.Figure()
+
+# Deforestation bars (left, dark red)
+fig_decade.add_trace(go.Bar(
+    x=deforestation_decades,
+    y=deforestation_vals,
+    name='Deforestation',
+    marker_color='rgb(120,40,40)',
+    text=deforestation_text,
+    textposition='auto',  # changed from 'outside' to 'auto'
+    offsetgroup=0,
+    width=0.35,
+    cliponaxis=False  # allow text to overflow if needed
+))
+
+# Net change bars (right, brown)
+fig_decade.add_trace(go.Bar(
+    x=deforestation_decades,
+    y=net_change_vals,
+    name='Net Change in Forest Area',
+    marker_color='rgb(180,140,90)',
+    text=net_change_text,
+    textposition='auto',  # changed from 'outside' to 'auto'
+    offsetgroup=1,
+    width=0.35,
+    cliponaxis=False  # allow text to overflow if needed
+))
+
+# Add y-axis padding for negative values
+fig_decade.update_layout(
+    title='Global Deforestation and Net Loss of Forests per Decade',
+    barmode='group',
+    xaxis_title='',
+    yaxis_title='Change (million hectares)',
+    legend_title='',
+    paper_bgcolor='white',
+    plot_bgcolor='#f8f9fa',
+    font=dict(size=16),
+    margin=dict(l=40, r=40, t=60, b=40),
+    yaxis=dict(
+        range=[min(deforestation_vals + net_change_vals) - 20, max(deforestation_vals + net_change_vals) + 20]
+    )
+)
+
+# --- Drivers of Tropical Forest Degradation (from image) ---
+deg_regions = ['Tropical (total)', 'Asia', 'Latin America', 'Africa']
+deg_data = {
+    'Timber & logging': [58, 82, 70, 21],
+    'Fuelwood & charcoal': [27, 15, 10, 62],
+    'Wildfires': [10, 2, 15, 7],
+    'Livestock grazing on forest': [5, 1, 5, 10]
+}
+deg_colors = {
+    'Timber & logging': '#8c4c2b',
+    'Fuelwood & charcoal': '#7c7c7c',
+    'Wildfires': '#e38d5c',
+    'Livestock grazing on forest': '#5b7f5b'
+}
+fig_deg = go.Figure()
+
+bottom = [0] * len(deg_regions)
+for driver, vals in deg_data.items():
+    fig_deg.add_trace(go.Bar(
+        x=deg_regions,
+        y=vals,
+        name=driver,
+        marker_color=deg_colors[driver],
+        text=[f'{v}%' for v in vals],
+        textposition='none',
     ))
 
-fig_line.update_layout(
-    title='Regional Forest Cover Trend (2000–2020)',
-    xaxis_title='Year',
-    yaxis_title='Average Forest Cover (km²)',
-    hovermode='x unified',
-    legend_title='Region',
-    legend=dict(x=1.05, y=1, xanchor='left', yanchor='top'),
+fig_deg.update_layout(
+    barmode='stack',
+    title='Drivers of Tropical Forest Degradation',
+    xaxis_title='',
+    yaxis_title='Share of Degradation (%)',
+    legend_title='',
     paper_bgcolor='white',
-    plot_bgcolor='#f8f9fa'
+    plot_bgcolor='#f8f9fa',
+    font=dict(size=16),
+    margin=dict(l=40, r=40, t=60, b=40),
+    yaxis=dict(range=[0, 100], ticksuffix='%')
+)
+
+# --- Global Deforestation by Region (from image) ---
+defor_regions = [
+    'Global', 'Latin America', 'Southeast Asia', 'Africa', 'North America', 'Russia, China, South Asia', 'Oceania', 'Europe'
+]
+defor_vals = [5.78, 3.4, 1.6, 0.08, 0.14, 0.09, 0.06, 0.0]  # in Mha
+defor_text = ['5.78 Mha', '3.4 Mha', '1.6 Mha', '0.08 Mha', '0.14 Mha', '0.09 Mha', '0.06 Mha', '0 Mha']
+
+fig_defor_region = go.Figure()
+fig_defor_region.add_trace(go.Bar(
+    x=defor_regions,
+    y=defor_vals,
+    marker_color='rgb(120,40,60)',
+    text=defor_text,
+    textposition='auto',  # changed from 'outside' to 'auto'
+    width=0.6,
+    cliponaxis=False  # allow text to overflow if needed
+))
+
+# Remove all extra annotation overlays for a clean look
+fig_defor_region.update_layout(
+    title='Nearly All Global Deforestation Occurs in the Tropics',
+    xaxis_title='',
+    yaxis_title='Annual Deforestation (Mha)',
+    paper_bgcolor='white',
+    plot_bgcolor='#f8f9fa',
+    font=dict(size=16),
+    margin=dict(l=40, r=40, t=80, b=40),
+    yaxis=dict(
+        range=[0, max(defor_vals) + 1]  # add padding to top
+    )
 )
 
 # --- Main Layout ---
@@ -113,10 +212,22 @@ def create_deforestation_layout():
             dcc.Graph(id='deforestation-bar-plot', figure=fig_bar)
         ], style={'padding': '20px', 'backgroundColor': 'white', 'borderRadius': '15px', 'margin': '20px'}),
 
-        # Line Plot Section
-            html.Div([
-            html.H3("Regional Trends Over Time", style={'textAlign': 'center'}),
-            dcc.Graph(id='deforestation-line-plot', figure=fig_line)
+        # Deforestation and Net Loss per Decade Section
+        html.Div([
+            html.H3("Global Deforestation and Net Loss of Forests per Decade", style={'textAlign': 'center'}),
+            dcc.Graph(id='deforestation-decade-plot', figure=fig_decade)
+        ], style={'padding': '20px', 'backgroundColor': 'white', 'borderRadius': '15px', 'margin': '20px'}),
+
+        # Global Deforestation by Region Section
+        html.Div([
+            html.H3("Nearly All Global Deforestation Occurs in the Tropics", style={'textAlign': 'center'}),
+            dcc.Graph(id='deforestation-region-plot', figure=fig_defor_region)
+        ], style={'padding': '20px', 'backgroundColor': 'white', 'borderRadius': '15px', 'margin': '20px'}),
+
+        # Drivers of Tropical Forest Degradation Section (moved to bottom)
+        html.Div([
+            html.H3("Drivers of Tropical Forest Degradation", style={'textAlign': 'center'}),
+            dcc.Graph(id='deforestation-degradation-plot', figure=fig_deg)
         ], style={'padding': '20px', 'backgroundColor': 'white', 'borderRadius': '15px', 'margin': '20px'})
 
     ], style={'backgroundColor': '#004d00', 'padding': '30px', 'minHeight': '100vh'}) 

@@ -195,6 +195,6 @@ def create_layout():
                 multi=True,
                 style={'width': '700px'}
             ),
-            dcc.Graph(id="ghg-scatterplot", style={"margin-bottom": "10px", 'border': '3px solid #2A547E', 'width': '100%'}),
+            dcc.Graph(id="ghg-scatterplot", style={"margin-bottom": "10px", 'border': '3px solid #2A547E'}),
         ], style={'marginBottom': '20px', 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center', 'width': '95%', 'margin': 'auto'}),
     ], style={'backgroundColor': '#3B2F70', 'padding': '30px', 'minHeight': '100vh'}) 
